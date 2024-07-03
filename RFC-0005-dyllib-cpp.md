@@ -1,8 +1,8 @@
-# **RFC0 for Presto**
+# **RFC-0005 for Presto Creating a Dynamically Linked Functions Library in CPP**
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for instructions on creating your RFC and the process surrounding it.
 
-## [Title] Creating a Dynamically Linked Functions Library in CPP
+## Creating a Dynamically Linked Functions Library in CPP
 
 Proposers
 
@@ -11,7 +11,6 @@ Proposers
 
 ## [Related Issues]
 
-Related issues may include Github issues, PRs or other RFCs.
 https://github.com/facebookincubator/velox/pull/1005
 
 ## Summary
