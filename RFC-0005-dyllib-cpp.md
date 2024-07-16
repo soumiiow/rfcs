@@ -1,7 +1,3 @@
-# **RFC-0005 for Presto Creating a Dynamically Linked Functions Library in CPP**
-
-See [CONTRIBUTING.md](CONTRIBUTING.md) for instructions on creating your RFC and the process surrounding it.
-
 ## Creating a Dynamically Linked Functions Library in CPP
 
 Proposers
@@ -15,16 +11,42 @@ https://github.com/facebookincubator/velox/pull/1005
 
 ## Summary
 
-This proposed change expands the dynamic function loading ability to cpp user defined functions (UDFs). The (Velox?) worker is to access said code. The dynamic functions are to be loaded upon running an instance of the presto server. In the presto server instance, it will search for any .so or .dylib files and load them using this library.
+This proposed change expands the dynamic function loading ability to cpp user defined functions (UDFs). The Prestissimo worker is to access said code. The dynamic functions are to be loaded upon running an instance of the presto server. In the presto server instance, it will search for any .so or .dylib files and load them using this library.
 ## Background
 
-Currently, on Presto, any Java UDFs can be loaded dynamically. This is an important feature for any client who wants their Presto build to be lightweight and to protect any non-public code or information from having to be in the open source space. Creating UDFs is an important functionality Presto has and its competitors offer as well. Being able to load CPP functions dynamically will extend the offering in Prestissimo/Velox(?).
+Currently, on Presto, any Java UDFs can be loaded dynamically. This is an important feature for any client who wants their Presto build to be lightweight and to protect any non-public code or information from having to be in the open source space. Creating UDFs is an important functionality Presto has and its competitors offer as well. Being able to load CPP functions dynamically will extend the offering in Prestissimo.
 
 ### [Optional] Goals
-
+Should be able to register all functions on runtime as theyre specified in the plugin directory. 
 ### [Optional] Non-goals
+Security concerns: There are some security concerns associated with using the dlopen library. Using dlopen, we run the risk of opening unsecure unknown shared objects especially given the lack of any form of validation. 
 
 ## Proposed Implementation
+The user can register their functions dynamically by calling loadDynamicLibraryFunctions() with the path to their shared library (files ending in .so in linux or .dylib in MacOS). At the time of running an instance of the PresterServer, if any shared library files exist in plugin directory, they get loaded on start up. Alternatively, the user can call loadDynamicLibraryFunctions() elsewhere and specify the exact location of these files and load them upon execution of this code.
+
+For dynamically loaded function registration, the format followed is mirrored of built-in function registration with some noted differences. For instance, the below example function uses the extern "C" keyword to protect against name mangling. additionally, a registry() function call is also necessary here.
+
+namespace facebook::presto::functions {
+
+template <typename TExecParams>
+struct Dynamic123Function {
+  FOLLY_ALWAYS_INLINE bool call(int64_t& result) {
+    result = 123;
+    return true;
+  }
+};
+
+} // namespace facebook::presto::functions
+
+extern "C" {
+
+void registry() {
+  facebook::velox::registerFunction<
+      facebook::presto::functions::Dynamic123Function,
+      int64_t>({"dynamic_123"});
+}
+}
+
 The general process is as follows:
 
 1. What modules are involved
@@ -36,7 +58,7 @@ The general process is as follows:
     None.
 4. Code flow using bullet points or pseudo code as applicable
     1. User is to create a shared library (in the form of a .so or .dylib file) for the UDF they wish to register. This is freeform with the noted exception that they follow the velox function registry API to create their UDF. This will be noted in the documentation. One way to create shared libraries is through CMake using the SHARED keyword in the CMakeLists.txt.
-    2. User will proceed to place their .so/.dylib files into the Plugins folder.
+    2. User will proceed to place their .so/.dylib files into the plugin directory.
     3. Upon running the PrestoServer, we will scan the plugin directory to load the .so/.dylib files dynamically using a call to loadDynamicLibraryFunctions. This function uses dlopen() to dynamically load these files.
 5. Any new user facing metrics that can be shown on CLI or UI.
     None.
