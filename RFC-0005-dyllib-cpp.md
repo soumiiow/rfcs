@@ -20,6 +20,7 @@ Currently, on Presto, any Java UDFs can be loaded dynamically. This is an import
 Should be able to register all functions on runtime as theyre specified in the plugin directory. 
 ### [Optional] Non-goals
 Security concerns: There are some security concerns associated with using the dlopen library. Using dlopen, we run the risk of opening unsecure unknown shared objects especially given the lack of any form of validation. 
+Security concerns: There are some security concerns associated with using the dlopen library. Using dlopen, we run the risk of opening unsecure unknown shared objects especially given the lack of any form of validation. 
 
 ## Proposed Implementation
 The user can register their functions dynamically by calling loadDynamicLibraryFunctions() with the path to their shared library (files ending in .so in linux or .dylib in MacOS). At the time of running an instance of the PresterServer, if any shared library files exist in plugin directory, they get loaded on start up. Alternatively, the user can call loadDynamicLibraryFunctions() elsewhere and specify the exact location of these files and load them upon execution of this code.
