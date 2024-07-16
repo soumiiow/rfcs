@@ -1,7 +1,3 @@
-# **RFC-0005 for Presto Creating a Dynamically Linked Functions Library in CPP**
-
-See [CONTRIBUTING.md](CONTRIBUTING.md) for instructions on creating your RFC and the process surrounding it.
-
 ## Creating a Dynamically Linked Functions Library in CPP
 
 Proposers
@@ -23,8 +19,34 @@ Currently, on Presto, any Java UDFs can be loaded dynamically. This is an import
 ### [Optional] Goals
 
 ### [Optional] Non-goals
+Security concerns: There are some security concerns associated with using the dlopen library. Using dlopen, we run the risk of opening unsecure unknown shared objects especially given the lack of any form of validation. 
 
 ## Proposed Implementation
+The user can register their functions dynamically by calling loadDynamicLibraryFunctions() with the path to their shared library (files ending in .so in linux or .dylib in MacOS). At the time of running an instance of the PresterServer, if any shared library files exist in etc/plugin directory, they get loaded on start up. Alternatively, the user can call loadDynamicLibraryFunctions() elsewhere and specify the exact location of these files and load them upon execution of this code.
+
+For dynamically loaded function registration, the format followed is mirrored of built-in function registration with some noted differences. For instance, the below example function uses the extern "C" keyword to protect against name mangling. additionally, a registry() function call is also necessary here.
+
+namespace facebook::presto::functions {
+
+template <typename TExecParams>
+struct Dynamic123Function {
+  FOLLY_ALWAYS_INLINE bool call(int64_t& result) {
+    result = 123;
+    return true;
+  }
+};
+
+} // namespace facebook::presto::functions
+
+extern "C" {
+
+void registry() {
+  facebook::velox::registerFunction<
+      facebook::presto::functions::Dynamic123Function,
+      int64_t>({"dynamic_123"});
+}
+}
+
 The general process is as follows:
 
 1. What modules are involved
